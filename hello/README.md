@@ -100,3 +100,21 @@ Dengan menggunakan ThreadPool, server dapat menangani beberapa request secara be
 terlihat ketika endpoint `/sleep` tidak lagi memblokir request lain, karena request tersebut 
 diproses oleh thread yang berbeda. Sehingga, performa dan responsivitas server meningkat 
 secara signifikan dibandingkan dengan pendekatan single-threaded.
+
+### Bonus Reflection Notes
+
+Pada bagian bonus, terdapat perubahan fungsi `new` dengan fungsi `build` untuk membuat ThreadPool 
+dengan pendekatan yang lebih aman. Perbedaan utama antara keduanya adalah pada cara menangani error.
+
+Pada fungsi `new`, digunakan `assert!` untuk memastikan ukuran thread pool lebih dari nol. 
+Jika kondisi ini tidak terpenuhi, program akan langsung berhenti. Pendekatan ini kurang fleksibel 
+karena tidak memberikan kesempatan bagi program untuk menangani error dengan lebih baik.
+
+Sebagai alternatif, fungsi `build` mengembalikan tipe `Result<ThreadPool, String>`, sehingga 
+jika terjadi kesalahan, seperti ukuran thread pool bernilai nol, fungsi akan mengembalikan `Err` 
+daripada menghentikan program. Hal ini memungkinkan pemanggil fungsi untuk menangani error 
+tersebut dengan lebih aman, misalnya dengan menampilkan pesan error atau mengambil tindakan lain.
+
+Penggunaan `Result` juga merupakan praktik yang umum dalam Rust untuk meningkatkan keandalan 
+program. Dengan pendekatan ini, program menjadi lebih robust dan tidak mudah crash dikarenakan 
+kesalahan yang seharusnya bisa ditangani.
