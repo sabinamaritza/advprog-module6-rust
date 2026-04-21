@@ -9,8 +9,8 @@ HTTP request dari stream secara efisien. HTTP request yang dikirim oleh browser 
 beberapa baris seperti request line (misalnya "GET / HTTP/1.1") dan header seperti Host, 
 User-Agent, dan lainnya.
 
-Metode `.lines()` digunakan untuk membaca setiap baris dari request, lalu `
-.map(|result| result.unwrap())` digunakan untuk mengambil nilai string dari hasil pembacaan. 
+Metode `.lines()` digunakan untuk membaca setiap baris dari request, lalu 
+`.map(|result| result.unwrap())` digunakan untuk mengambil nilai string dari hasil pembacaan. 
 Setelah itu, `.take_while(|line| !line.is_empty())` berfungsi untuk menghentikan pembacaan 
 ketika mencapai baris kosong, yang berarti akhir dari header HTTP sudah dicapai.
 
@@ -40,13 +40,12 @@ Semua bagian tersebut digabungkan menggunakan `format!` sebelum dikirim melalui 
 #### How to split between responses and why the refactoring is needed
 
 Ketika bagian error reponse pertama ditambahkan, kode langsung menggunakan `if-else` untuk splitting
-proses pembuatan response, sehingga terdapat duplikasi kode pada 
-bagian pembacaan file, perhitungan panjang konten, dan pengiriman response.
+proses pembuatan response, sehingga terdapat duplikasi kode pada bagian pembacaan file, 
+perhitungan panjang konten, dan pengiriman response.
 
 Karena code duplication merupakan code smell, perlu dilakukan refactoring dengan cara memisah
 bagian yang berbeda dan bagian yang sama. Bagian yang berbeda hanya `status_line` dan 
-`filename`, yang 
-ditentukan berdasarkan request, seperti "GET / HTTP/1.1". Lalu, bagian yang
+`filename`, yang ditentukan berdasarkan request, seperti "GET / HTTP/1.1". Lalu, bagian yang
 sama, seperti membaca file, menghitung panjang konten, membuat response string, dan pengiriman 
 ke stream hanya perlu ditulis satu kali saja di luar kondisi `if-else`. Pada kode yang telah di 
 refactor, tuple `(status_line, filename)` digunakan untuk menyimpan hasil dari percabangan kondisi.
@@ -57,3 +56,21 @@ kondisi baru tanpa menyalin ulang seluruh proses pembuatan response. Selain itu,
 lebih clean dan lebih mudah dipahami.
 
 ![Commit 3 Screenshot](img/commit3.png)
+
+### Commit 4 Reflection Notes
+#### Single thread causing slow request
+
+Pada milestone ini, dilakukan simulasi request yang lambat pada server dengan menggunakan 
+`thread::sleep`. Pada endpoint `/sleep`, server akan menunda response selama 10 detik 
+sebelum mengirimkan hasil ke browser.
+
+Dalam single-threaded server, server hanya dapat menangani satu request dalam satu waktu. 
+Sehingga, ketika ada request yang membutuhkan waktu yang lama untuk diproses, request lain 
+yang masuk harus menunggu hingga proses yang lama tersebut selesai.
+
+Saat satu tab mengakses endpoint `/sleep`, tab lain yang mengakses endpoint biasa (`/`) juga ikut 
+tertunda. Ini menunjukkan bahwa server tidak dapat memproses request secara paralel.
+
+Kondisi ini menjadi masalah besar ketika server digunakan oleh banyak pengguna, karena satu 
+request yang lambat dapat menghambat sistem secara keseluruhan. Oleh karena itu, pendekatan
+single-threaded tidak efisien untuk aplikasi yang membutuhkan performa tinggi.
