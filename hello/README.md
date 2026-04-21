@@ -74,3 +74,29 @@ tertunda. Ini menunjukkan bahwa server tidak dapat memproses request secara para
 Kondisi ini menjadi masalah besar ketika server digunakan oleh banyak pengguna, karena satu 
 request yang lambat dapat menghambat sistem secara keseluruhan. Oleh karena itu, pendekatan
 single-threaded tidak efisien untuk aplikasi yang membutuhkan performa tinggi.
+
+### Commit 5 Reflection Notes
+#### How ThreadPool works
+
+Pada milestone ini, dilakukan implementasi multithreaded server menggunakan ThreadPool untuk 
+mengatasi keterbatasan server single-threaded. ThreadPool pada tutorial ini terdiri dari beberapa 
+worker thread yang disimpan dalam vector, serta sebuah channel (`mpsc`) yang digunakan untuk 
+mengirim job dari main thread ke worker.
+
+Ketika server menerima koneksi baru, koneksi tersebut tidak langsung diproses, tetapi dibungkus 
+menjadi sebuah closure dan dikirim sebagai job melalui `sender` ke dalam channel menggunakan 
+fungsi `execute`. Job ini kemudian akan diambil oleh salah satu worker thread yang sedang idle.
+
+Setiap worker berjalan dalam loop dan terus menunggu job menggunakan `receiver.lock().unwrap().recv()`.
+Untuk memastikan keamanan dalam akses data bersama, digunakan `Arc` dan `Mutex`. `Arc` memungkinkan 
+receiver untuk dimiliki oleh banyak thread, sedangkan `Mutex` memastikan hanya satu thread yang dapat
+mengambil job dari channel dalam satu waktu.
+
+Pada implementasi ini, lock hanya digunakan saat mengambil job, kemudian dilepas sebelum job 
+dieksekusi. Hal ini memungkinkan worker lain tetap dapat mengambil job secara paralel tanpa saling 
+menghambat.
+
+Dengan menggunakan ThreadPool, server dapat menangani beberapa request secara bersamaan. Hal ini
+terlihat ketika endpoint `/sleep` tidak lagi memblokir request lain, karena request tersebut 
+diproses oleh thread yang berbeda. Sehingga, performa dan responsivitas server meningkat 
+secara signifikan dibandingkan dengan pendekatan single-threaded.
