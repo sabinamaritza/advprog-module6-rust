@@ -35,3 +35,25 @@ Response HTTP dibuat dengan mengikuti struktur tertentu, dimulai dengan status l
 Semua bagian tersebut digabungkan menggunakan `format!` sebelum dikirim melalui `stream.write_all`.
 
 ![Commit 2 Screenshot](img/commit2.png)
+
+### Commit 3 Reflection Notes
+#### How to split between responses and why the refactoring is needed
+
+Ketika bagian error reponse pertama ditambahkan, kode langsung menggunakan `if-else` untuk splitting
+proses pembuatan response, sehingga terdapat duplikasi kode pada 
+bagian pembacaan file, perhitungan panjang konten, dan pengiriman response.
+
+Karena code duplication merupakan code smell, perlu dilakukan refactoring dengan cara memisah
+bagian yang berbeda dan bagian yang sama. Bagian yang berbeda hanya `status_line` dan 
+`filename`, yang 
+ditentukan berdasarkan request, seperti "GET / HTTP/1.1". Lalu, bagian yang
+sama, seperti membaca file, menghitung panjang konten, membuat response string, dan pengiriman 
+ke stream hanya perlu ditulis satu kali saja di luar kondisi `if-else`. Pada kode yang telah di 
+refactor, tuple `(status_line, filename)` digunakan untuk menyimpan hasil dari percabangan kondisi.
+
+Refactoring ini diperlukan karena meningkatkan readability dan maintainability kode. Sehingga jika 
+nantinya ingin menambahkan lebih banyak route atau jenis response, hanya perlu menambahkan
+kondisi baru tanpa menyalin ulang seluruh proses pembuatan response. Selain itu, kode menjadi 
+lebih clean dan lebih mudah dipahami.
+
+![Commit 3 Screenshot](img/commit3.png)
